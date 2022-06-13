@@ -1,16 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api_key.dart';
 
 class Auth with ChangeNotifier {
   String? _token;
   String? _id;
   DateTime? _expiryDate;
+  Timer? _logoutTimer;
 
-  bool get IsAuth {
+  // 유저가 authenticated 됐나?
+  bool get isAuth {
     if (_token == null || _id == null || _expiryDate == null) {
       return false;
     }
@@ -26,22 +31,90 @@ class Auth with ChangeNotifier {
     return _token;
   }
 
-  Future<void> signIn() async {
+  Future<void> loadAuthDataFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiryDate = prefs.getString("expiryDate") == null
+        ? null
+        : DateTime.parse(prefs.getString("expiryDate")!);
+
+    if (expiryDate != null && expiryDate.isAfter(DateTime.now())) {
+      _token = prefs.getString("token");
+      _id = prefs.getString("id");
+      _expiryDate = expiryDate;
+      final now = DateTime.now();
+      final secondsLeft = expiryDate.difference(now).inSeconds;
+      _logoutTimer = Timer(Duration(seconds: secondsLeft), logout);
+      print(secondsLeft);
+    }
+  }
+
+  Future<void> signIn(String email, String password) async {
     final url = Uri.parse(
         "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$API_KEY");
+
+    try {
+      final res = await http.post(url,
+          body: json.encode({
+            "email": email,
+            "password": password,
+            "returnSecureToken": true,
+          }));
+
+      if (res.statusCode != 200) {
+        throw HttpException("${res.statusCode}");
+      }
+
+      final resData = json.decode(res.body) as Map<String, dynamic>;
+      final expiresIn = resData["expiresIn"];
+
+      _token = resData["idToken"];
+      _id = resData["email"];
+      _expiryDate = DateTime.now().add(Duration(seconds: int.parse(expiresIn)));
+
+      final prefs = await SharedPreferences.getInstance();
+
+      prefs.setString("token", _token!);
+      prefs.setString("expiryDate", _expiryDate!.toIso8601String());
+      prefs.setString("id", _id!);
+
+      _setLogoutTmer(expiresIn);
+
+      notifyListeners();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  void logout() {
+    _token = null;
+    _id = null;
+    _expiryDate = null;
+    _logoutTimer!.cancel();
+    _logoutTimer = null;
+    notifyListeners();
+  }
+
+  void _setLogoutTmer(int seconds) {
+    _logoutTimer = Timer(Duration(seconds: seconds), logout);
   }
 
   Future<void> signUp(String email, String password) async {
     final url = Uri.parse(
         "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$API_KEY");
 
-    final res = await http.post(url,
-        body: json.encode({
-          "email": email,
-          "password": password,
-          "returnSecureToken": true,
-        }));
+    try {
+      final res = await http.post(url,
+          body: json.encode({
+            "email": email,
+            "password": password,
+            "returnSecureToken": true,
+          }));
 
-    print(res.body);
+      if (res.statusCode != 200) {
+        throw HttpException("${res.statusCode}");
+      }
+    } catch (error) {
+      throw error;
+    }
   }
 }

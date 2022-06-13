@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import './providers/auth.dart';
+import './providers/products.dart';
+import './providers/product.dart';
 import './screens/auth_screeen.dart';
+import './screens/product_overview_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,12 +17,35 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: AuthScreen(),
-    );
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Auth>(
+            create: (context) => Auth(),
+          ),
+          ChangeNotifierProxyProvider<Auth, Products>(
+              create: (context) => Products(null),
+              update: (ctx, auth, prev) {
+                return Products(auth.token);
+              })
+        ],
+        child: Consumer<Auth>(
+          builder: (context, auth, child) => FutureBuilder(
+              future: auth.loadAuthDataFromLocal(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else {
+                  return MaterialApp(
+                    title: 'Flutter Demo',
+                    theme: ThemeData(
+                      primarySwatch: Colors.blue,
+                    ),
+                    home: auth.isAuth ? ProductOverviewScreen() : AuthScreen(),
+                  );
+                }
+              }),
+        ));
   }
 }
