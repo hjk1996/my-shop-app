@@ -3,15 +3,27 @@ import 'package:provider/provider.dart';
 
 import '../providers/products.dart';
 import '../widgets/product_grid_cell.dart';
+import '../screens/cart_screen.dart';
 
 class ProductOverviewScreen extends StatelessWidget {
   const ProductOverviewScreen({Key? key}) : super(key: key);
+
+  static const routeName = "product-overview";
 
   @override
   Widget build(BuildContext context) {
     final productsProvider = Provider.of<Products>(context, listen: false);
     return Scaffold(
-      appBar: AppBar(title: const Text("Shop")),
+      appBar: AppBar(
+        title: const Text("Shop"),
+        actions: [
+          IconButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed(CartScreen.routeName);
+              },
+              icon: const Icon(Icons.shopping_cart_sharp))
+        ],
+      ),
       body: FutureBuilder(
         future: productsProvider.fetchProductsFromServer(),
         builder: (ctx, snapshot) {
@@ -20,16 +32,32 @@ class ProductOverviewScreen extends StatelessWidget {
               child: CircularProgressIndicator(),
             );
           } else {
-            return GridView.count(
-                crossAxisCount: 2,
-                children: productsProvider.products
-                    .map((product) => ProductGridCell(
-                          product.productId,
-                          product.imageUrl,
-                          product.title,
-                          product.isFavorite,
-                        ))
-                    .toList());
+            return Consumer<Products>(
+              builder: (context, products, child) {
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await products.fetchProductsFromServer();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2),
+                      itemCount: products.products.length,
+                      itemBuilder: (ctx, idx) {
+                        // ChangeNotifierProvider.value는 이미 만들어진 provider를 제공하기 위해 사용하면 좋음.
+                        // Products provider에는 Product provider들이 리스트로 있음.
+                        // 따라서 Products provider에 있는 Product provider를 제공함.
+                        return ChangeNotifierProvider.value(
+                          value: products.products[idx],
+                          child: ProductGridCell(),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            );
           }
         },
       ),

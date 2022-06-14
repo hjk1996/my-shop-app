@@ -10,13 +10,13 @@ import '../api_key.dart';
 
 class Auth with ChangeNotifier {
   String? _token;
-  String? _id;
+  String? _userId;
   DateTime? _expiryDate;
   Timer? _logoutTimer;
 
   // 유저가 authenticated 됐나?
   bool get isAuth {
-    if (_token == null || _id == null || _expiryDate == null) {
+    if (_token == null || _userId == null || _expiryDate == null) {
       return false;
     }
 
@@ -25,6 +25,10 @@ class Auth with ChangeNotifier {
     }
 
     return true;
+  }
+
+  String? get userId {
+    return _userId;
   }
 
   String? get token {
@@ -39,7 +43,7 @@ class Auth with ChangeNotifier {
 
     if (expiryDate != null && expiryDate.isAfter(DateTime.now())) {
       _token = prefs.getString("token");
-      _id = prefs.getString("id");
+      _userId = prefs.getString("userId");
       _expiryDate = expiryDate;
       final now = DateTime.now();
       final secondsLeft = expiryDate.difference(now).inSeconds;
@@ -65,17 +69,16 @@ class Auth with ChangeNotifier {
       }
 
       final resData = json.decode(res.body) as Map<String, dynamic>;
-      final expiresIn = resData["expiresIn"];
-
+      final expiresIn = int.parse(resData["expiresIn"]);
       _token = resData["idToken"];
-      _id = resData["email"];
-      _expiryDate = DateTime.now().add(Duration(seconds: int.parse(expiresIn)));
+      _userId = resData["localId"];
+      _expiryDate = DateTime.now().add(Duration(seconds: expiresIn));
 
       final prefs = await SharedPreferences.getInstance();
 
       prefs.setString("token", _token!);
+      prefs.setString("userId", _userId!);
       prefs.setString("expiryDate", _expiryDate!.toIso8601String());
-      prefs.setString("id", _id!);
 
       _setLogoutTmer(expiresIn);
 
@@ -87,7 +90,7 @@ class Auth with ChangeNotifier {
 
   void logout() {
     _token = null;
-    _id = null;
+    _userId = null;
     _expiryDate = null;
     _logoutTimer!.cancel();
     _logoutTimer = null;
