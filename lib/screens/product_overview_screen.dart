@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/products.dart';
 import '../widgets/product_grid_cell.dart';
+import '../widgets/drawer.dart';
 import '../screens/cart_screen.dart';
 
 class ProductOverviewScreen extends StatelessWidget {
@@ -24,6 +25,7 @@ class ProductOverviewScreen extends StatelessWidget {
               icon: const Icon(Icons.shopping_cart_sharp))
         ],
       ),
+      drawer: MyDrawer(),
       body: FutureBuilder(
         future: productsProvider.fetchProductsFromServer(),
         builder: (ctx, snapshot) {
@@ -41,8 +43,9 @@ class ProductOverviewScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(15),
                     child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2, mainAxisExtent: 250),
                       itemCount: products.products.length,
                       itemBuilder: (ctx, idx) {
                         // ChangeNotifierProvider.value는 이미 만들어진 provider를 제공하기 위해 사용하면 좋음.

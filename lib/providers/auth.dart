@@ -88,12 +88,16 @@ class Auth with ChangeNotifier {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
     _token = null;
     _userId = null;
     _expiryDate = null;
     _logoutTimer!.cancel();
     _logoutTimer = null;
+    await prefs.remove("token");
+    await prefs.remove("userId");
+    await prefs.remove("expiryDate");
     notifyListeners();
   }
 

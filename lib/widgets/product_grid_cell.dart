@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../screens/product_detail_screen.dart';
 import '../providers/product.dart';
 import '../providers/auth.dart';
+import '../providers/cart.dart';
 
 class ProductGridCell extends StatelessWidget {
   @override
@@ -23,23 +24,38 @@ class ProductGridCell extends StatelessWidget {
         elevation: 5,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          height: 120,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Expanded(
                   flex: 7,
-                  child: Container(
-                    color: Colors.amber,
+                  child: Stack(
+                    alignment: AlignmentDirectional.topCenter,
+                    children: <Widget>[
+                      Image(
+                        image: NetworkImage(product.imageUrl),
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        padding: EdgeInsets.all(5),
+                        decoration: BoxDecoration(),
+                        child: Text(
+                          product.title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 20),
+                        ),
+                      )
+                    ],
                   )),
               Expanded(
                   flex: 2,
                   child: Container(
                     color: Colors.indigo,
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[
                         LikeButton(auth: auth),
-                        
+                        ToCartButton(product: product)
                       ],
                     ),
                   ))
@@ -48,6 +64,25 @@ class ProductGridCell extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class ToCartButton extends StatelessWidget {
+  const ToCartButton({
+    Key? key,
+    required this.product,
+  }) : super(key: key);
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+        onPressed: () {
+          Provider.of<Cart>(context, listen: false)
+              .addCartItem(product.productId);
+        },
+        icon: Icon(Icons.shopping_bag_outlined));
   }
 }
 
@@ -65,13 +100,10 @@ class LikeButton extends StatelessWidget {
       return IconButton(
           onPressed: () async {
             try {
-              await prod.toggleFavorite(
-                  auth.userId!, auth.token!);
+              await prod.toggleFavorite(auth.userId!, auth.token!);
             } catch (error) {
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(
-                          "Something went wrong! [$error]")));
+                  SnackBar(content: Text("Something went wrong! [$error]")));
             }
           },
           icon: Icon(prod.isFavorite
