@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/products.dart';
 import '../widgets/product_grid_cell.dart';
 import '../widgets/drawer.dart';
-import '../screens/cart_screen.dart';
+import '../widgets/cart_icon_badge.dart';
 
 class ProductOverviewScreen extends StatelessWidget {
   const ProductOverviewScreen({Key? key}) : super(key: key);
@@ -17,15 +17,9 @@ class ProductOverviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Shop"),
-        actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed(CartScreen.routeName);
-              },
-              icon: const Icon(Icons.shopping_cart_sharp))
-        ],
+        actions: const [CartIconBadge()],
       ),
-      drawer: MyDrawer(),
+      drawer: const MyDrawer(),
       body: FutureBuilder(
         future: productsProvider.fetchProductsFromServer(),
         builder: (ctx, snapshot) {

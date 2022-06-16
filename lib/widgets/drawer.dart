@@ -18,7 +18,7 @@ class MyDrawer extends StatelessWidget {
           DrawerHeader(
             decoration: BoxDecoration(color: Theme.of(context).primaryColor),
             child: const Text(
-              "Drawer",
+              "My Shop",
               textAlign: TextAlign.center,
             ),
           ),

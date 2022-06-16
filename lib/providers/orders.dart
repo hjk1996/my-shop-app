@@ -15,6 +15,13 @@ class Order {
       required this.orderedItems});
 
   bool expanded = false;
+
+  double get totalPrice {
+    return orderedItems.fold<double>(
+        0,
+        (previousValue, item) =>
+            previousValue + item['price'] * item['quantity']);
+  }
 }
 
 class Orders with ChangeNotifier {
