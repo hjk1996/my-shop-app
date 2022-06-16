@@ -6,10 +6,17 @@ import '../widgets/product_grid_cell.dart';
 import '../widgets/drawer.dart';
 import '../widgets/cart_icon_badge.dart';
 
-class ProductOverviewScreen extends StatelessWidget {
+class ProductOverviewScreen extends StatefulWidget {
   const ProductOverviewScreen({Key? key}) : super(key: key);
 
   static const routeName = "product-overview";
+
+  @override
+  State<ProductOverviewScreen> createState() => _ProductOverviewScreenState();
+}
+
+class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
+  bool _showFavorites = false;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +24,16 @@ class ProductOverviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Shop"),
-        actions: const [CartIconBadge()],
+        actions: [
+          IconButton(
+              onPressed: () {
+                setState(() {
+                  _showFavorites = !_showFavorites;
+                });
+              },
+              icon: const Icon(Icons.favorite)),
+          CartIconBadge()
+        ],
       ),
       drawer: const MyDrawer(),
       body: FutureBuilder(
@@ -40,13 +56,17 @@ class ProductOverviewScreen extends StatelessWidget {
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2, mainAxisExtent: 250),
-                      itemCount: products.products.length,
+                      itemCount: _showFavorites
+                          ? products.favoritedProducts.length
+                          : products.products.length,
                       itemBuilder: (ctx, idx) {
                         // ChangeNotifierProvider.value는 이미 만들어진 provider를 제공하기 위해 사용하면 좋음.
                         // Products provider에는 Product provider들이 리스트로 있음.
                         // 따라서 Products provider에 있는 Product provider를 제공함.
                         return ChangeNotifierProvider.value(
-                          value: products.products[idx],
+                          value: _showFavorites
+                              ? products.favoritedProducts[idx]
+                              : products.products[idx],
                           child: ProductGridCell(),
                         );
                       },
